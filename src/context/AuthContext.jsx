@@ -1,12 +1,17 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
 import apiClient from '../api/apiClient'
+import { logInfo } from '../utils/logger'
 
 export const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user')
-    return saved ? JSON.parse(saved) : null
+    try {
+      const saved = localStorage.getItem('user')
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
   })
   const [token, setToken] = useState(() => localStorage.getItem('token'))
   const [loading, setLoading] = useState(true)
@@ -44,6 +49,7 @@ export function AuthProvider({ children }) {
   }
 
   const logout = useCallback(() => {
+    logInfo('auth', 'logout')
     setToken(null)
     setUser(null)
     localStorage.removeItem('token')
@@ -52,10 +58,11 @@ export function AuthProvider({ children }) {
 
   const hasRole = useCallback((role) => {
     if (!user) return false
+    const userRole = user.roleName || user.role
     if (Array.isArray(role)) {
-      return role.includes(user.role)
+      return role.includes(userRole)
     }
-    return user.role === role
+    return userRole === role
   }, [user])
 
   const isAuthenticated = !!token && !!user

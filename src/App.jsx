@@ -14,10 +14,12 @@ import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderHistory from './pages/OrderHistory'
+import Wallet from './pages/Wallet'
 
 // Dealer pages
 import DealerDashboard from './pages/dealer/DealerDashboard'
 import AddProduct from './pages/dealer/AddProduct'
+import EditProduct from './pages/dealer/EditProduct'
 
 // Reviewer pages
 import ReviewerDashboard from './pages/reviewer/ReviewerDashboard'
@@ -59,6 +61,11 @@ export default function App() {
                 <OrderHistory />
               </ProtectedRoute>
             } />
+            <Route path="/wallet" element={
+              <ProtectedRoute roles={['EndUser']}>
+                <Wallet />
+              </ProtectedRoute>
+            } />
 
             {/* Dealer routes */}
             <Route path="/dealer/dashboard" element={
@@ -69,6 +76,11 @@ export default function App() {
             <Route path="/dealer/add-product" element={
               <ProtectedRoute roles={['Dealer']}>
                 <AddProduct />
+              </ProtectedRoute>
+            } />
+            <Route path="/dealer/edit-product/:id" element={
+              <ProtectedRoute roles={['Dealer']}>
+                <EditProduct />
               </ProtectedRoute>
             } />
 

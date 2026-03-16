@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Navbar as BsNavbar, Nav, Container, NavDropdown, Badge } from 'react-bootstrap'
-import { FaShoppingCart, FaUser, FaBell } from 'react-icons/fa'
+import { FaShoppingCart, FaUser, FaBell, FaWallet, FaDownload } from 'react-icons/fa'
 import useAuth from '../../hooks/useAuth'
 import apiClient from '../../api/apiClient'
+import { exportLogs } from '../../utils/logger'
 
 export default function Navbar() {
   const { user, isAuthenticated, logout, hasRole } = useAuth()
@@ -51,6 +52,17 @@ export default function Navbar() {
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const handleExportLogs = () => {
+    const json = exportLogs()
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `nlkart_logs_${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -126,9 +138,13 @@ export default function Navbar() {
                 align="end"
               >
                 {hasRole('EndUser') && (
-                  <NavDropdown.Item as={Link} to="/orders">My Orders</NavDropdown.Item>
+                  <>
+                    <NavDropdown.Item as={Link} to="/wallet"><FaWallet className="me-2" />My Wallet</NavDropdown.Item>
+                    <NavDropdown.Item as={Link} to="/orders">My Orders</NavDropdown.Item>
+                  </>
                 )}
                 <NavDropdown.Divider />
+                <NavDropdown.Item onClick={handleExportLogs}><FaDownload className="me-2" />Export Logs</NavDropdown.Item>
                 <NavDropdown.Item onClick={handleLogout}>Logout</NavDropdown.Item>
               </NavDropdown>
             ) : (

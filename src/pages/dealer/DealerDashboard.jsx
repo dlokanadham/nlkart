@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Container, Table, Badge, Button, Spinner, Alert, Card } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
-import { FaPlus } from 'react-icons/fa'
+import { FaPlus, FaEdit } from 'react-icons/fa'
 import apiClient from '../../api/apiClient'
+
+const NO_IMG = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="#dee2e6"><rect width="50" height="50"/></svg>')
 
 const statusVariant = (status) => {
   const map = {
@@ -63,19 +65,19 @@ export default function DealerDashboard() {
         </Card>
         <Card className="flex-fill">
           <Card.Body className="text-center">
-            <h3 className="text-success">{products.filter((p) => p.status === 'Approved').length}</h3>
+            <h3 className="text-success">{products.filter((p) => p.approvalStatus === 'Approved').length}</h3>
             <small className="text-muted">Approved</small>
           </Card.Body>
         </Card>
         <Card className="flex-fill">
           <Card.Body className="text-center">
-            <h3 className="text-warning">{products.filter((p) => p.status === 'Pending').length}</h3>
+            <h3 className="text-warning">{products.filter((p) => p.approvalStatus === 'Pending').length}</h3>
             <small className="text-muted">Pending</small>
           </Card.Body>
         </Card>
         <Card className="flex-fill">
           <Card.Body className="text-center">
-            <h3 className="text-danger">{products.filter((p) => p.status === 'Rejected').length}</h3>
+            <h3 className="text-danger">{products.filter((p) => p.approvalStatus === 'Rejected').length}</h3>
             <small className="text-muted">Rejected</small>
           </Card.Body>
         </Card>
@@ -101,32 +103,45 @@ export default function DealerDashboard() {
               <th>Price</th>
               <th>Stock</th>
               <th>Status</th>
-              <th>Created</th>
+              <th>Reviewer Notes</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {products.map((product) => (
-              <tr key={product.id}>
-                <td>{product.id}</td>
+              <tr key={product.productId}>
+                <td>{product.productId}</td>
                 <td>
                   <img
-                    src={product.imageUrl || 'https://via.placeholder.com/50?text=N/A'}
+                    src={product.imageUrl || NO_IMG}
                     alt={product.name}
                     style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }}
-                    onError={(e) => {
-                      e.target.src = 'https://via.placeholder.com/50?text=N/A'
-                    }}
+                    onError={(e) => { e.target.onerror = null; e.target.src = NO_IMG }}
                   />
                 </td>
                 <td>{product.name}</td>
-                <td>${(product.price || 0).toFixed(2)}</td>
+                <td>&#8377;{(product.price || 0).toFixed(2)}</td>
                 <td>{product.stock}</td>
                 <td>
-                  <Badge bg={statusVariant(product.status)} className="status-badge">
-                    {product.status}
+                  <Badge bg={statusVariant(product.approvalStatus)} className="status-badge">
+                    {product.approvalStatus}
                   </Badge>
                 </td>
-                <td>{new Date(product.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <small className="text-muted">{product.reviewerNotes || '-'}</small>
+                </td>
+                <td>
+                  {(product.approvalStatus === 'Pending' || product.approvalStatus === 'Rejected') && (
+                    <Button
+                      as={Link}
+                      to={`/dealer/edit-product/${product.productId}`}
+                      variant="outline-primary"
+                      size="sm"
+                    >
+                      <FaEdit className="me-1" />Edit
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

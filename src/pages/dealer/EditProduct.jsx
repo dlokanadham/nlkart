@@ -1,33 +1,42 @@
 import { useState, useEffect } from 'react'
-import { Container, Card, Form, Button, Row, Col, Alert } from 'react-bootstrap'
-import { useNavigate } from 'react-router-dom'
+import { Container, Card, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap'
+import { useNavigate, useParams } from 'react-router-dom'
 import apiClient from '../../api/apiClient'
 
-export default function AddProduct() {
+export default function EditProduct() {
+  const { id } = useParams()
   const [categories, setCategories] = useState([])
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    originalPrice: '',
-    categoryId: '',
-    imageUrl: '',
-    stock: '',
-  })
+  const [formData, setFormData] = useState(null)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
-    loadCategories()
-  }, [])
+    loadData()
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadCategories = async () => {
+  const loadData = async () => {
     try {
-      const res = await apiClient.get('/products/categories')
-      setCategories(Array.isArray(res.data) ? res.data : res.data.categories || [])
+      const [productRes, catRes] = await Promise.all([
+        apiClient.get(`/dealer/products/${id}`),
+        apiClient.get('/products/categories')
+      ])
+      const product = productRes.data
+      setFormData({
+        name: product.name || '',
+        description: product.description || '',
+        price: product.price || '',
+        originalPrice: product.originalPrice || '',
+        categoryId: product.categoryId || '',
+        imageUrl: product.imageUrl || '',
+        stock: product.stock || '',
+      })
+      setCategories(Array.isArray(catRes.data) ? catRes.data : catRes.data.categories || [])
     } catch {
-      // ignore
+      setError('Failed to load product')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -38,7 +47,7 @@ export default function AddProduct() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
+    setSaving(true)
     try {
       const payload = {
         name: formData.name,
@@ -49,13 +58,29 @@ export default function AddProduct() {
         imageUrl: formData.imageUrl || null,
         stock: parseInt(formData.stock),
       }
-      await apiClient.post('/dealer/products', payload)
+      await apiClient.put(`/dealer/products/${id}`, payload)
       navigate('/dealer/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to add product')
+      setError(err.response?.data?.message || 'Failed to update product')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <Container className="text-center py-5">
+        <Spinner animation="border" variant="primary" />
+      </Container>
+    )
+  }
+
+  if (!formData) {
+    return (
+      <Container className="py-5">
+        <Alert variant="warning">Product not found.</Alert>
+      </Container>
+    )
   }
 
   return (
@@ -64,7 +89,7 @@ export default function AddProduct() {
         <Col md={8}>
           <Card className="shadow-sm">
             <Card.Body className="p-4">
-              <h2 className="mb-4">Add New Product</h2>
+              <h2 className="mb-4">Edit Product</h2>
               {error && <Alert variant="danger">{error}</Alert>}
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
@@ -75,7 +100,6 @@ export default function AddProduct() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    placeholder="Enter product name"
                   />
                 </Form.Group>
 
@@ -88,7 +112,6 @@ export default function AddProduct() {
                     value={formData.description}
                     onChange={handleChange}
                     required
-                    placeholder="Describe your product"
                   />
                 </Form.Group>
 
@@ -104,7 +127,6 @@ export default function AddProduct() {
                         value={formData.price}
                         onChange={handleChange}
                         required
-                        placeholder="0.00"
                       />
                     </Form.Group>
                   </Col>
@@ -118,7 +140,6 @@ export default function AddProduct() {
                         name="originalPrice"
                         value={formData.originalPrice}
                         onChange={handleChange}
-                        placeholder="0.00"
                       />
                     </Form.Group>
                   </Col>
@@ -151,7 +172,6 @@ export default function AddProduct() {
                         value={formData.stock}
                         onChange={handleChange}
                         required
-                        placeholder="0"
                       />
                     </Form.Group>
                   </Col>
@@ -168,9 +188,13 @@ export default function AddProduct() {
                   />
                 </Form.Group>
 
+                <Alert variant="info" className="mb-3">
+                  After updating, the product will be reset to <strong>Pending</strong> status for re-review.
+                </Alert>
+
                 <div className="d-flex gap-2">
-                  <Button variant="primary" type="submit" disabled={loading}>
-                    {loading ? 'Adding...' : 'Add Product'}
+                  <Button variant="primary" type="submit" disabled={saving}>
+                    {saving ? 'Saving...' : 'Update Product'}
                   </Button>
                   <Button variant="outline-secondary" onClick={() => navigate('/dealer/dashboard')}>
                     Cancel

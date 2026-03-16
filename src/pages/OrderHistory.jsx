@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Container, Card, Table, Badge, Spinner, Alert, Accordion } from 'react-bootstrap'
 import apiClient from '../api/apiClient'
+import { logFlow } from '../utils/logger'
 
 const statusVariant = (status) => {
   const map = {
-    Pending: 'warning',
-    Processing: 'info',
+    Placed: 'info',
     Shipped: 'primary',
     Delivered: 'success',
     Cancelled: 'danger',
@@ -19,13 +19,15 @@ export default function OrderHistory() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    logFlow('navigation', 'page_view', { page: '/orders' })
     loadOrders()
   }, [])
 
   const loadOrders = async () => {
     try {
       const res = await apiClient.get('/orders')
-      setOrders(Array.isArray(res.data) ? res.data : res.data.orders || [])
+      const data = res.data
+      setOrders(Array.isArray(data) ? data : data.orders || [])
     } catch {
       setError('Failed to load orders')
     } finally {
@@ -56,21 +58,21 @@ export default function OrderHistory() {
       ) : (
         <Accordion defaultActiveKey="0">
           {orders.map((order, idx) => (
-            <Accordion.Item key={order.id} eventKey={String(idx)}>
+            <Accordion.Item key={order.orderId} eventKey={String(idx)}>
               <Accordion.Header>
                 <div className="d-flex justify-content-between align-items-center w-100 me-3">
                   <div>
-                    <strong>Order #{order.id}</strong>
+                    <strong>Order #{order.orderId}</strong>
                     <small className="text-muted ms-3">
-                      {new Date(order.createdAt || order.orderDate).toLocaleDateString()}
+                      {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                      })}
                     </small>
-                  </div>
-                  <div>
-                    <Badge bg={statusVariant(order.status)} className="me-2">
-                      {order.status}
+                    <Badge bg={statusVariant(order.orderStatus)} className="ms-2">
+                      {order.orderStatus}
                     </Badge>
-                    <strong className="text-primary">${(order.totalAmount || order.total || 0).toFixed(2)}</strong>
                   </div>
+                  <strong className="text-primary">&#8377;{(order.totalAmount || 0).toFixed(2)}</strong>
                 </div>
               </Accordion.Header>
               <Accordion.Body>
@@ -88,10 +90,10 @@ export default function OrderHistory() {
                     <tbody>
                       {order.items.map((item, i) => (
                         <tr key={i}>
-                          <td>{item.productName || item.name}</td>
+                          <td>{item.productName}</td>
                           <td>{item.quantity}</td>
-                          <td>${(item.price || 0).toFixed(2)}</td>
-                          <td>${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</td>
+                          <td>&#8377;{(item.unitPrice || 0).toFixed(2)}</td>
+                          <td>&#8377;{((item.unitPrice || 0) * (item.quantity || 0)).toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { FaShoppingBag, FaTruck, FaShieldAlt, FaHeadset } from 'react-icons/fa'
 import apiClient from '../api/apiClient'
 import ProductGrid from '../components/products/ProductGrid'
+import { logFlow } from '../utils/logger'
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([])
@@ -11,6 +12,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    logFlow('navigation', 'page_view', { page: '/' })
     loadData()
   }, [])
 

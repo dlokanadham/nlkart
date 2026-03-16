@@ -5,6 +5,7 @@ import { FaShoppingCart } from 'react-icons/fa'
 import apiClient from '../api/apiClient'
 import useAuth from '../hooks/useAuth'
 import StarRating from '../components/common/StarRating'
+import { logFlow, logInfo } from '../utils/logger'
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -30,6 +31,7 @@ export default function ProductDetail() {
     try {
       const res = await apiClient.get(`/products/${id}`)
       setProduct(res.data)
+      logFlow('product', 'product_view', { productId: parseInt(id), name: res.data.name, category: res.data.categoryName })
     } catch {
       setProduct(null)
     } finally {
@@ -47,6 +49,7 @@ export default function ProductDetail() {
   }
 
   const addToCart = async () => {
+    logInfo('cart', 'add_to_cart', { productId: parseInt(id), name: product?.name, quantity })
     setCartMsg('')
     setCartError('')
     try {

@@ -4,6 +4,8 @@ import { Container, Row, Col, Card, Button, Form, Alert, Spinner, Badge } from '
 import { FaCheck, FaTimes } from 'react-icons/fa'
 import apiClient from '../../api/apiClient'
 
+const NO_IMG = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400" fill="#dee2e6"><rect width="500" height="400"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#6c757d" font-size="20">No Image</text></svg>')
+
 export default function ReviewProduct() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -19,7 +21,7 @@ export default function ReviewProduct() {
 
   const loadProduct = async () => {
     try {
-      const res = await apiClient.get(`/products/${id}`)
+      const res = await apiClient.get(`/reviewer/product/${id}`)
       setProduct(res.data)
     } catch {
       setError('Failed to load product')
@@ -66,13 +68,11 @@ export default function ReviewProduct() {
         <Col md={6}>
           <Card className="mb-4">
             <img
-              src={product.imageUrl || 'https://via.placeholder.com/500x400?text=No+Image'}
+              src={product.imageUrl || NO_IMG}
               alt={product.name}
               className="card-img-top"
               style={{ maxHeight: 400, objectFit: 'cover' }}
-              onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/500x400?text=No+Image'
-              }}
+              onError={(e) => { e.target.onerror = null; e.target.src = NO_IMG }}
             />
           </Card>
         </Col>
@@ -82,9 +82,9 @@ export default function ReviewProduct() {
             <Card.Body>
               <h3>{product.name}</h3>
               <Badge bg="warning" className="mb-3">Pending Review</Badge>
-              <p><strong>Price:</strong> ${(product.price || 0).toFixed(2)}</p>
+              <p><strong>Price:</strong> &#8377;{(product.price || 0).toFixed(2)}</p>
               {product.originalPrice && product.originalPrice !== product.price && (
-                <p><strong>Original Price:</strong> ${product.originalPrice.toFixed(2)}</p>
+                <p><strong>Original Price:</strong> &#8377;{product.originalPrice.toFixed(2)}</p>
               )}
               <p><strong>Stock:</strong> {product.stock}</p>
               <p><strong>Category:</strong> {product.categoryName || '-'}</p>

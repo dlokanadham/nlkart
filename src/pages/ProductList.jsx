@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { FaSearch } from 'react-icons/fa'
 import apiClient from '../api/apiClient'
 import ProductGrid from '../components/products/ProductGrid'
+import { logFlow, logInfo } from '../utils/logger'
 
 export default function ProductList() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -18,6 +19,7 @@ export default function ProductList() {
   const sort = searchParams.get('sort') || ''
 
   useEffect(() => {
+    logFlow('navigation', 'product_list_view', { page: '/products' })
     loadCategories()
   }, [])
 
@@ -27,8 +29,8 @@ export default function ProductList() {
 
   const loadCategories = async () => {
     try {
-      const res = await apiClient.get('/categories')
-      setCategories(Array.isArray(res.data) ? res.data : [])
+      const res = await apiClient.get('/products/categories')
+      setCategories(Array.isArray(res.data) ? res.data : res.data.categories || [])
     } catch {
       // ignore
     }
@@ -74,7 +76,9 @@ export default function ProductList() {
   const handleSearchSubmit = (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
-    updateParam('search', formData.get('search'))
+    const query = formData.get('search')
+    logInfo('product', 'search', { query })
+    updateParam('search', query)
   }
 
   return (
@@ -101,11 +105,11 @@ export default function ProductList() {
         <Col md={3}>
           <Form.Select
             value={category}
-            onChange={(e) => updateParam('category', e.target.value)}
+            onChange={(e) => { logInfo('product', 'category_filter', { categoryId: e.target.value }); updateParam('category', e.target.value) }}
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+              <option key={cat.categoryId} value={cat.categoryId}>{cat.name}</option>
             ))}
           </Form.Select>
         </Col>

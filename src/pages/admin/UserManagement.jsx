@@ -3,7 +3,15 @@ import { Container, Table, Button, Badge, Spinner, Alert, Modal, Form, Row, Col 
 import { FaPlus, FaEdit, FaToggleOn, FaToggleOff } from 'react-icons/fa'
 import apiClient from '../../api/apiClient'
 
-const ROLES = ['EndUser', 'Dealer', 'Reviewer', 'Administrator', 'SupportAgent']
+const ROLE_MAP = {
+  'Administrator': 1,
+  'Dealer': 2,
+  'Reviewer': 3,
+  'EndUser': 4,
+  'SupportAgent': 5,
+}
+
+const ROLE_ID_TO_NAME = Object.fromEntries(Object.entries(ROLE_MAP).map(([k, v]) => [v, k]))
 
 export default function UserManagement() {
   const [users, setUsers] = useState([])
@@ -18,7 +26,7 @@ export default function UserManagement() {
     password: '',
     firstName: '',
     lastName: '',
-    role: 'EndUser',
+    roleId: 4,
   })
 
   useEffect(() => {
@@ -37,12 +45,16 @@ export default function UserManagement() {
   }
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === 'roleId' ? parseInt(value) : value,
+    }))
   }
 
   const openCreate = () => {
     setEditingUser(null)
-    setFormData({ email: '', username: '', password: '', firstName: '', lastName: '', role: 'EndUser' })
+    setFormData({ email: '', username: '', password: '', firstName: '', lastName: '', roleId: 4 })
     setShowModal(true)
   }
 
@@ -54,7 +66,7 @@ export default function UserManagement() {
       password: '',
       firstName: user.firstName || '',
       lastName: user.lastName || '',
-      role: user.role || 'EndUser',
+      roleId: user.roleId || 4,
     })
     setShowModal(true)
   }
@@ -67,7 +79,8 @@ export default function UserManagement() {
       if (editingUser) {
         const payload = { ...formData }
         if (!payload.password) delete payload.password
-        await apiClient.put(`/admin/users/${editingUser.id}`, payload)
+        delete payload.username
+        await apiClient.put(`/admin/users/${editingUser.userId}`, payload)
         setSuccess('User updated successfully')
       } else {
         await apiClient.post('/admin/users', formData)
@@ -84,7 +97,7 @@ export default function UserManagement() {
     setError('')
     setSuccess('')
     try {
-      await apiClient.put(`/admin/users/${user.id}/toggle`)
+      await apiClient.put(`/admin/users/${user.userId}/toggle`)
       setSuccess(`User ${user.isActive ? 'deactivated' : 'activated'} successfully`)
       loadUsers()
     } catch (err) {
@@ -127,12 +140,12 @@ export default function UserManagement() {
         </thead>
         <tbody>
           {users.map((user) => (
-            <tr key={user.id}>
-              <td>{user.id}</td>
+            <tr key={user.userId}>
+              <td>{user.userId}</td>
               <td>{user.username}</td>
               <td>{user.email}</td>
               <td>{user.firstName} {user.lastName}</td>
-              <td><Badge bg="info">{user.role}</Badge></td>
+              <td><Badge bg="info">{user.roleName}</Badge></td>
               <td>
                 <Badge bg={user.isActive ? 'success' : 'danger'}>
                   {user.isActive ? 'Active' : 'Inactive'}
@@ -233,9 +246,9 @@ export default function UserManagement() {
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Role</Form.Label>
-              <Form.Select name="role" value={formData.role} onChange={handleChange}>
-                {ROLES.map((role) => (
-                  <option key={role} value={role}>{role}</option>
+              <Form.Select name="roleId" value={formData.roleId} onChange={handleChange}>
+                {Object.entries(ROLE_MAP).map(([name, id]) => (
+                  <option key={id} value={id}>{name}</option>
                 ))}
               </Form.Select>
             </Form.Group>

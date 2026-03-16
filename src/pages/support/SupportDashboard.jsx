@@ -37,9 +37,10 @@ export default function SupportDashboard() {
   const loadOrders = async () => {
     try {
       const res = await apiClient.get('/orders')
-      setOrders(Array.isArray(res.data) ? res.data : res.data.orders || [])
-    } catch {
-      setError('Failed to load orders')
+      const data = res.data
+      setOrders(Array.isArray(data) ? data : data.data || data.orders || [])
+    } catch (err) {
+      setError('Failed to load orders: ' + (err.response?.data?.message || err.message))
     } finally {
       setLoadingOrders(false)
     }
@@ -47,9 +48,9 @@ export default function SupportDashboard() {
 
   const loadProducts = async () => {
     try {
-      const res = await apiClient.get('/products?limit=100')
+      const res = await apiClient.get('/products?per_page=50')
       const data = res.data
-      setProducts(Array.isArray(data) ? data : data.products || [])
+      setProducts(Array.isArray(data) ? data : data.data || data.products || [])
     } catch {
       // ignore
     } finally {
@@ -100,19 +101,19 @@ export default function SupportDashboard() {
               </thead>
               <tbody>
                 {orders.map((order) => (
-                  <tr key={order.id}>
-                    <td>#{order.id}</td>
-                    <td>{order.username || order.customerName || '-'}</td>
-                    <td>${(order.totalAmount || order.total || 0).toFixed(2)}</td>
+                  <tr key={order.orderId}>
+                    <td>#{order.orderId}</td>
+                    <td>{order.username || `User #${order.userId}`}</td>
+                    <td>Rs.{(order.totalAmount || 0).toFixed(2)}</td>
                     <td>
-                      <Badge bg={orderStatusVariant(order.status)}>
-                        {order.status}
+                      <Badge bg={orderStatusVariant(order.orderStatus)}>
+                        {order.orderStatus}
                       </Badge>
                     </td>
                     <td>
                       <small>{order.shippingAddress}</small>
                     </td>
-                    <td>{new Date(order.createdAt || order.orderDate).toLocaleDateString()}</td>
+                    <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -142,15 +143,15 @@ export default function SupportDashboard() {
               </thead>
               <tbody>
                 {products.map((product) => (
-                  <tr key={product.id}>
-                    <td>{product.id}</td>
+                  <tr key={product.productId}>
+                    <td>{product.productId}</td>
                     <td>{product.name}</td>
-                    <td>${(product.price || 0).toFixed(2)}</td>
+                    <td>Rs.{(product.price || 0).toFixed(2)}</td>
                     <td>{product.stock}</td>
                     <td>{product.categoryName || '-'}</td>
                     <td>
-                      <Badge bg={productStatusVariant(product.status)}>
-                        {product.status || 'N/A'}
+                      <Badge bg={productStatusVariant(product.approvalStatus)}>
+                        {product.approvalStatus || 'N/A'}
                       </Badge>
                     </td>
                     <td>{product.averageRating ? product.averageRating.toFixed(1) : '-'}</td>

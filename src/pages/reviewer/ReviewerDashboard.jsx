@@ -3,6 +3,8 @@ import { Container, Table, Badge, Button, Spinner, Alert, Card } from 'react-boo
 import { Link } from 'react-router-dom'
 import apiClient from '../../api/apiClient'
 
+const NO_IMG = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="#dee2e6"><rect width="50" height="50"/></svg>')
+
 export default function ReviewerDashboard() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -65,26 +67,24 @@ export default function ReviewerDashboard() {
           </thead>
           <tbody>
             {products.map((product) => (
-              <tr key={product.id}>
-                <td>{product.id}</td>
+              <tr key={product.productId}>
+                <td>{product.productId}</td>
                 <td>
                   <img
-                    src={product.imageUrl || 'https://via.placeholder.com/50?text=N/A'}
+                    src={product.imageUrl || NO_IMG}
                     alt={product.name}
                     style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }}
-                    onError={(e) => {
-                      e.target.src = 'https://via.placeholder.com/50?text=N/A'
-                    }}
+                    onError={(e) => { e.target.onerror = null; e.target.src = NO_IMG }}
                   />
                 </td>
                 <td>{product.name}</td>
-                <td>${(product.price || 0).toFixed(2)}</td>
+                <td>&#8377;{(product.price || 0).toFixed(2)}</td>
                 <td>{product.dealerName || product.dealerUsername || '-'}</td>
                 <td>{new Date(product.createdAt).toLocaleDateString()}</td>
                 <td>
                   <Button
                     as={Link}
-                    to={`/reviewer/review/${product.id}`}
+                    to={`/reviewer/review/${product.productId}`}
                     variant="outline-primary"
                     size="sm"
                   >

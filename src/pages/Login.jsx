@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuth from '../hooks/useAuth'
+import { logFlow, logInfo, logError } from '../utils/logger'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -16,10 +17,12 @@ export default function Login() {
     setError('')
     setLoading(true)
 
+    logFlow('auth', 'login_attempt', { username })
     try {
       const user = await login(username, password)
+      logInfo('auth', 'login_success', { roleName: user.roleName })
       // Redirect based on role
-      switch (user.role) {
+      switch (user.roleName) {
         case 'Administrator':
           navigate('/admin/dashboard')
           break
@@ -36,7 +39,9 @@ export default function Login() {
           navigate('/')
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Login failed. Please check your credentials.')
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Login failed. Please check your credentials.'
+      logError('auth', 'login_failure', { error: errorMsg })
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }

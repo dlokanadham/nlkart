@@ -12,16 +12,22 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.Authorization = `Basic ${token}`
     }
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Response interceptor for error handling
+// Response interceptor - unwrap { success, data } envelope and handle errors
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // API returns { success, data, message } - unwrap so res.data gives the inner data
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      response.data = response.data.data !== undefined ? response.data.data : response.data
+    }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token')

@@ -3,6 +3,9 @@ import { Container, Row, Col, Card, Button, Form, Alert, Spinner, Table } from '
 import { Link, useNavigate } from 'react-router-dom'
 import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa'
 import apiClient from '../api/apiClient'
+import { logFlow, logInfo } from '../utils/logger'
+
+const FALLBACK_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="#dee2e6"><rect width="80" height="80"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#6c757d" font-size="10">No Image</text></svg>')
 
 export default function Cart() {
   const [items, setItems] = useState([])
@@ -11,6 +14,7 @@ export default function Cart() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    logFlow('navigation', 'page_view', { page: '/cart' })
     loadCart()
   }, [])
 
@@ -29,11 +33,12 @@ export default function Cart() {
 
   const updateQuantity = async (cartItemId, newQty) => {
     if (newQty < 1) return
+    logInfo('cart', 'quantity_change', { cartItemId, newQuantity: newQty })
     try {
       await apiClient.put(`/cart/${cartItemId}`, { quantity: newQty })
       setItems((prev) =>
         prev.map((item) =>
-          item.id === cartItemId ? { ...item, quantity: newQty } : item
+          item.cartItemId === cartItemId ? { ...item, quantity: newQty } : item
         )
       )
     } catch (err) {
@@ -42,15 +47,16 @@ export default function Cart() {
   }
 
   const removeItem = async (cartItemId) => {
+    logInfo('cart', 'item_remove', { cartItemId })
     try {
       await apiClient.delete(`/cart/${cartItemId}`)
-      setItems((prev) => prev.filter((item) => item.id !== cartItemId))
+      setItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId))
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to remove item')
     }
   }
 
-  const total = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0)
+  const total = items.reduce((sum, item) => sum + (item.productPrice || 0) * (item.quantity || 0), 0)
 
   if (loading) {
     return (
@@ -89,31 +95,32 @@ export default function Cart() {
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={item.id}>
+                  <tr key={item.cartItemId}>
                     <td>
                       <div className="d-flex align-items-center">
                         <img
-                          src={item.imageUrl || 'https://via.placeholder.com/80?text=N/A'}
-                          alt={item.productName || item.name}
+                          src={item.productImage || FALLBACK_IMG}
+                          alt={item.productName}
                           className="cart-item-img me-3"
                           onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/80?text=N/A'
+                            e.target.onerror = null
+                            e.target.src = FALLBACK_IMG
                           }}
                         />
                         <div>
                           <Link to={`/products/${item.productId}`} className="text-decoration-none fw-bold">
-                            {item.productName || item.name}
+                            {item.productName}
                           </Link>
                         </div>
                       </div>
                     </td>
-                    <td>${(item.price || 0).toFixed(2)}</td>
+                    <td>&#8377;{(item.productPrice || 0).toFixed(2)}</td>
                     <td>
                       <div className="d-flex align-items-center">
                         <Button
                           size="sm"
                           variant="outline-secondary"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                           disabled={item.quantity <= 1}
                         >
                           <FaMinus size={10} />
@@ -121,7 +128,7 @@ export default function Cart() {
                         <Form.Control
                           type="number"
                           value={item.quantity}
-                          onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
+                          onChange={(e) => updateQuantity(item.cartItemId, parseInt(e.target.value) || 1)}
                           min={1}
                           className="mx-2 text-center"
                           style={{ width: '60px' }}
@@ -130,18 +137,18 @@ export default function Cart() {
                         <Button
                           size="sm"
                           variant="outline-secondary"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
                         >
                           <FaPlus size={10} />
                         </Button>
                       </div>
                     </td>
-                    <td className="fw-bold">${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</td>
+                    <td className="fw-bold">&#8377;{((item.productPrice || 0) * (item.quantity || 0)).toFixed(2)}</td>
                     <td>
                       <Button
                         variant="outline-danger"
                         size="sm"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeItem(item.cartItemId)}
                       >
                         <FaTrash />
                       </Button>
@@ -157,17 +164,17 @@ export default function Cart() {
                 <h5 className="mb-3">Order Summary</h5>
                 <div className="d-flex justify-content-between mb-2">
                   <span>Items ({items.length})</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>&#8377;{total.toFixed(2)}</span>
                 </div>
                 <hr />
                 <div className="d-flex justify-content-between mb-3 fw-bold fs-5">
                   <span>Total</span>
-                  <span className="text-primary">${total.toFixed(2)}</span>
+                  <span className="text-primary">&#8377;{total.toFixed(2)}</span>
                 </div>
                 <Button
                   variant="primary"
                   className="w-100"
-                  onClick={() => navigate('/checkout')}
+                  onClick={() => { logFlow('cart', 'proceed_to_checkout'); navigate('/checkout') }}
                 >
                   Proceed to Checkout
                 </Button>
