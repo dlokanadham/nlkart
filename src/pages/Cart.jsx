@@ -1,0 +1,189 @@
+import { useState, useEffect } from 'react'
+import { Container, Row, Col, Card, Button, Form, Alert, Spinner, Table } from 'react-bootstrap'
+import { Link, useNavigate } from 'react-router-dom'
+import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa'
+import apiClient from '../api/apiClient'
+
+export default function Cart() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    loadCart()
+  }, [])
+
+  const loadCart = async () => {
+    setLoading(true)
+    try {
+      const res = await apiClient.get('/cart')
+      const data = res.data
+      setItems(Array.isArray(data) ? data : data.items || [])
+    } catch {
+      setError('Failed to load cart')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateQuantity = async (cartItemId, newQty) => {
+    if (newQty < 1) return
+    try {
+      await apiClient.put(`/cart/${cartItemId}`, { quantity: newQty })
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === cartItemId ? { ...item, quantity: newQty } : item
+        )
+      )
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update quantity')
+    }
+  }
+
+  const removeItem = async (cartItemId) => {
+    try {
+      await apiClient.delete(`/cart/${cartItemId}`)
+      setItems((prev) => prev.filter((item) => item.id !== cartItemId))
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to remove item')
+    }
+  }
+
+  const total = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0)
+
+  if (loading) {
+    return (
+      <Container className="text-center py-5">
+        <Spinner animation="border" variant="primary" />
+      </Container>
+    )
+  }
+
+  return (
+    <Container className="py-4">
+      <h2 className="mb-4">Shopping Cart</h2>
+      {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
+
+      {items.length === 0 ? (
+        <Card className="text-center py-5">
+          <Card.Body>
+            <h4 className="text-muted mb-3">Your cart is empty</h4>
+            <Button as={Link} to="/products" variant="primary">
+              Continue Shopping
+            </Button>
+          </Card.Body>
+        </Card>
+      ) : (
+        <Row>
+          <Col lg={8}>
+            <Table responsive className="align-middle">
+              <thead className="table-light">
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th style={{ width: '150px' }}>Quantity</th>
+                  <th>Subtotal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <div className="d-flex align-items-center">
+                        <img
+                          src={item.imageUrl || 'https://via.placeholder.com/80?text=N/A'}
+                          alt={item.productName || item.name}
+                          className="cart-item-img me-3"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/80?text=N/A'
+                          }}
+                        />
+                        <div>
+                          <Link to={`/products/${item.productId}`} className="text-decoration-none fw-bold">
+                            {item.productName || item.name}
+                          </Link>
+                        </div>
+                      </div>
+                    </td>
+                    <td>${(item.price || 0).toFixed(2)}</td>
+                    <td>
+                      <div className="d-flex align-items-center">
+                        <Button
+                          size="sm"
+                          variant="outline-secondary"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                        >
+                          <FaMinus size={10} />
+                        </Button>
+                        <Form.Control
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
+                          min={1}
+                          className="mx-2 text-center"
+                          style={{ width: '60px' }}
+                          size="sm"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline-secondary"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        >
+                          <FaPlus size={10} />
+                        </Button>
+                      </div>
+                    </td>
+                    <td className="fw-bold">${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</td>
+                    <td>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => removeItem(item.id)}
+                      >
+                        <FaTrash />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Col>
+          <Col lg={4}>
+            <Card className="shadow-sm">
+              <Card.Body>
+                <h5 className="mb-3">Order Summary</h5>
+                <div className="d-flex justify-content-between mb-2">
+                  <span>Items ({items.length})</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+                <hr />
+                <div className="d-flex justify-content-between mb-3 fw-bold fs-5">
+                  <span>Total</span>
+                  <span className="text-primary">${total.toFixed(2)}</span>
+                </div>
+                <Button
+                  variant="primary"
+                  className="w-100"
+                  onClick={() => navigate('/checkout')}
+                >
+                  Proceed to Checkout
+                </Button>
+                <Button
+                  as={Link}
+                  to="/products"
+                  variant="outline-secondary"
+                  className="w-100 mt-2"
+                >
+                  Continue Shopping
+                </Button>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+    </Container>
+  )
+}
