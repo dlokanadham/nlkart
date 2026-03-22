@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "nlkart-db": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["c:/Practice/AI/ClaudeCode/ClaudeDemo/nlkart-mcp-servers/db_server.py"]
+    },
+    "nlkart-business": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["c:/Practice/AI/ClaudeCode/ClaudeDemo/nlkart-mcp-servers/business_server.py"]
+    },
+    "nlkart-api-test": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["c:/Practice/AI/ClaudeCode/ClaudeDemo/nlkart-mcp-servers/api_server.py"]
+    }
+  }
+}
