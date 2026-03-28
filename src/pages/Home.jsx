@@ -20,7 +20,7 @@ export default function Home() {
     try {
       const [productsRes, categoriesRes] = await Promise.allSettled([
         apiClient.get('/products?limit=8'),
-        apiClient.get('/categories'),
+        apiClient.get('/products/categories'),
       ])
       if (productsRes.status === 'fulfilled') {
         const data = productsRes.value.data
