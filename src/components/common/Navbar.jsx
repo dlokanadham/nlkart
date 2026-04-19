@@ -1,22 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Navbar as BsNavbar, Nav, Container, NavDropdown, Badge } from 'react-bootstrap'
 import { FaShoppingCart, FaUser, FaBell, FaWallet, FaDownload } from 'react-icons/fa'
 import useAuth from '../../hooks/useAuth'
 import apiClient from '../../api/apiClient'
 import { exportLogs } from '../../utils/logger'
+import { CartContext } from '../../context/CartContext'
 
 export default function Navbar() {
   const { user, isAuthenticated, logout, hasRole } = useAuth()
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState([])
-  const [cartCount, setCartCount] = useState(0)
+  const { cartCount, refreshCartCount } = useContext(CartContext)
 
   useEffect(() => {
     if (isAuthenticated) {
       loadNotifications()
       if (hasRole('EndUser')) {
-        loadCartCount()
+        refreshCartCount()
       }
     }
   }, [isAuthenticated]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -25,16 +26,6 @@ export default function Navbar() {
     try {
       const res = await apiClient.get('/notifications')
       setNotifications(res.data.filter((n) => !n.isRead))
-    } catch {
-      // ignore
-    }
-  }
-
-  const loadCartCount = async () => {
-    try {
-      const res = await apiClient.get('/cart')
-      const items = Array.isArray(res.data) ? res.data : res.data.items || []
-      setCartCount(items.length)
     } catch {
       // ignore
     }

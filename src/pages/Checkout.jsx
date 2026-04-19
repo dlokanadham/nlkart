@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Table, Modal } from 'react-bootstrap'
 import { useNavigate, Link } from 'react-router-dom'
 import { FaCheckCircle, FaWallet } from 'react-icons/fa'
 import apiClient from '../api/apiClient'
 import useAuth from '../hooks/useAuth'
 import { logFlow, logInfo, logError } from '../utils/logger'
+import { CartContext } from '../context/CartContext'
 
 export default function Checkout() {
+  const { setCartCount } = useContext(CartContext)
   const [cartItems, setCartItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -14,10 +16,10 @@ export default function Checkout() {
   const [walletBalance, setWalletBalance] = useState(0)
   const [orderSuccess, setOrderSuccess] = useState(null)
   const [shippingAddress, setShippingAddress] = useState({
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
+    street: '123 MG Road, Apartment 4B',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    zipCode: '500001',
     country: 'India',
   })
   const navigate = useNavigate()
@@ -64,6 +66,7 @@ export default function Checkout() {
       const addressString = `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zipCode}, ${shippingAddress.country}`
       const res = await apiClient.post('/orders', { shippingAddress: addressString })
       logInfo('order', 'order_placed', { orderId: res.data.orderId, total: res.data.totalAmount })
+      setCartCount(0)
       setOrderSuccess(res.data)
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to place order'

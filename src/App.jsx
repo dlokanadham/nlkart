@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { CartProvider } from './context/CartContext'
 import MainLayout from './components/layout/MainLayout'
 import ProtectedRoute from './components/common/ProtectedRoute'
 
@@ -36,6 +37,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <CartProvider>
         <Routes>
           <Route element={<MainLayout />}>
             {/* Public routes */}
@@ -124,6 +126,7 @@ export default function App() {
             } />
           </Route>
         </Routes>
+        </CartProvider>
       </AuthProvider>
     </BrowserRouter>
   )

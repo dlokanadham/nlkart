@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { useParams } from 'react-router-dom'
 import { Container, Row, Col, Card, Button, Form, Alert, Spinner, Badge } from 'react-bootstrap'
 import { FaShoppingCart } from 'react-icons/fa'
@@ -6,10 +6,12 @@ import apiClient from '../api/apiClient'
 import useAuth from '../hooks/useAuth'
 import StarRating from '../components/common/StarRating'
 import { logFlow, logInfo } from '../utils/logger'
+import { CartContext } from '../context/CartContext'
 
 export default function ProductDetail() {
   const { id } = useParams()
   const { isAuthenticated, hasRole } = useAuth()
+  const { refreshCartCount } = useContext(CartContext)
   const [product, setProduct] = useState(null)
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
@@ -54,6 +56,7 @@ export default function ProductDetail() {
     setCartError('')
     try {
       await apiClient.post('/cart', { productId: parseInt(id), quantity })
+      refreshCartCount()
       setCartMsg('Added to cart!')
       setTimeout(() => setCartMsg(''), 3000)
     } catch (err) {

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { Container, Row, Col, Card, Button, Form, Alert, Spinner, Table } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa'
 import apiClient from '../api/apiClient'
 import { logFlow, logInfo } from '../utils/logger'
+import { CartContext } from '../context/CartContext'
 
 const FALLBACK_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="#dee2e6"><rect width="80" height="80"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#6c757d" font-size="10">No Image</text></svg>')
 
@@ -12,6 +13,7 @@ export default function Cart() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { setCartCount } = useContext(CartContext)
 
   useEffect(() => {
     logFlow('navigation', 'page_view', { page: '/cart' })
@@ -23,7 +25,9 @@ export default function Cart() {
     try {
       const res = await apiClient.get('/cart')
       const data = res.data
-      setItems(Array.isArray(data) ? data : data.items || [])
+      const cartItems = Array.isArray(data) ? data : data.items || []
+      setItems(cartItems)
+      setCartCount(cartItems.length)
     } catch {
       setError('Failed to load cart')
     } finally {
@@ -50,7 +54,11 @@ export default function Cart() {
     logInfo('cart', 'item_remove', { cartItemId })
     try {
       await apiClient.delete(`/cart/${cartItemId}`)
-      setItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId))
+      setItems((prev) => {
+        const updated = prev.filter((item) => item.cartItemId !== cartItemId)
+        setCartCount(updated.length)
+        return updated
+      })
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to remove item')
     }
